@@ -1,0 +1,134 @@
+1) Basics:
+ <Route path=<custom_path> element=<custom_element>/> : định tuyến tuyến đường cần đến
+ <Link to=<path>>{children}</Link> : định tuyến tuyến đường cần đến khi click
+
+ - khi đặt 1 vào components ở bên ngoài Routes, khi thay route, chỉ
+ nhưng components ở trong Routes bị re-render và thay đổi content => tối ưu performent
+
+2) Router types
+- Những kiểu khác nhau của router, không chỉ có BrowserRouter, còn có HashRouter
+ + BrowserRouter: kiểu bình thường
+ + HashRouter như BrowserRouter, nhưng thay vì lưu trữ url 1 cách thông thường, nó lưu trữ url bên trong phần băm
+   . ví dụ thay vì: localhost:3000/books, router trên trình duyệt là localhost:3000/#/books
+   . # là một hash chứ không phải là một phần của url
+   . Hữu ích trong trường hợp: làm việc trên 1 shared server (99% ko dùng)
+ + unstable_HistoryRouter: cho phép bạn kiểm soát hoàn toàn lịch sử element (99% ko dùng)
+ + MemoryRouter: khác hẳn router khác, nó không phụ thuộc thanh URL, hữu ích khi run test, nếu
+ muốn test 1 router nào đó rõ ràng, nó hoạt động trên bộ nhớ thay vì kết nối với Browser
+ + StaticRouter: Khác hẳn những router khác, nó không cho phép thay đổi page, mặc dù bạn đamg ở url bất kì trên trình duyệt,
+ nó vẫn render ra 1 route chỉ định trong nó, chỉ hữu ích khi làm server side rendering
+
+ VD: import {StaticRouter} from "react-router-dom/server"
+ <StaticRouter location="/">
+    <App />
+  </StaticRouter>
+
+  . khi trên trình duyệt là /books, giao diện vãn render ở / là home page >>>
+
+  + NativeRouter: cho react-native 
+
+3)Dynamic route
+/:<dynamic name>
+VD: /books/:id =>/book/1
+
+- để tiếp cận dynamic variable ở 1 trang cụ thể, có nhiều custom hook trong react-router có thể lấy nó
+   + useParams: nhận vào không tham số và trả về 1 object chứa tất cả custom tham số ta định nghĩa ở route
+   VD: /books/:id , khi đến path này nó trả về 1 object có key là id
+   . const {id} = useParams()
+
+4)Route Specificity
+- Truy cập chính xác 1 route nào đó
+VD: so sánh 2 route
+<Route path="/books/:id" element={<Book />}/>
+<Route path="/books/new" element={<NewBook />}/>
+
+- Nó sẽ render chính xác, mặc dù trùng tuyến đường, bởi vì dưới v6, nó check từ trên 
+xuống dưới, nó sẽ check route đầu tiên khớp để render, nhưng khi dùng version 6, react-router đủ
+thông minh để nhận biết url cứng(hash code), react-router sẽ làm 1 vài magic để lựa chọn đúng
+- Nó có nghĩa là nếu chúng ta có dynamic variable và hasd-coded variables nó sẽ tới route hash-code
+
+=>> Ở bản v6 không phân biệt thứ tự
+
+- Cách custom route đến 404 page: dùng path = *, có nghĩa là nó math với tất cả
+mọi path, một khi các path chỉ định khác không khớp, nó sẽ khớp, vào *
+
+VD: <Route path="*" element={<404Page />}/>
+
+5)Nested Routes
+- Tránh lặp lại tiền tố của các route
+
+B1: Tạo 1 parent route có path có thể không cần chỉ định element
+B2: + Tạo các Route con bên trong là oke
+    + Bên trong phần cha có thể có 1 route có prop index kiểu boolen => nó sẽ match chính xác với path của parent element
+
+
+* Điều đặc biệt mà ta hay sử dụng nested routes trong dự án là tạo nhiều layout khác nhau:
+- cái mà tất cả children element là bên cạnh parent component share
+- tạo ra nhiều file Layout để sử dụng cho nhiều layout khác nhau
+- cách dùng là muốn component nào có layout nào thì định nghĩa nó trong layout cha là oke
+
+- để layout cha mà có thể lấy ra được layout con để render ra thì cần dùng Outlet component, nó đại
+diện cho component con ở trong nested route
+===> chỉ cần paste Outlet vào vị trí cần thiết để render ra ui là oke
+
+* chú ý: ở trong component Outlet có thể truyển vào 1 prop: được gọi là context,
+giống react context bình thường, khi truyền vào context 1 cái gì đó, thì các component
+con sẽ nhận được bằng việc sử dụng useOutletContext()
+VD: const obj = useOutletContext()
+
+* có thể có đa Routes trong app, có thể dùng đa routes, thỉnh thoảng nếu muốn hiển 
+thị thêm content dựa trên 1 route, cái mà là nội dung phụ thôi, ko phải component chính
+<Routes><Routes /> : phụ : có thể render theo route
+<Routes><Routes /> : phụ : có thể render theo route
+<Routes><Routes /> : chính
+<Routes><Routes /> : phụ : có thể render theo route
+
+- tuyến Routes phụ có thể hash-coded khi thêm 1 props là location="/..."
+
+* Khi app quá lớn, app có rất nhiều pages, không nhất thiết phải định nghĩa hết
+routes ở cùng 1 nơi.
+ - có thể tạo ra 1 file ví dụ BookRoutes.js là BookRoutes component, bên trong định nghĩa Routes and Route liên quan
+ - Sau đó trong App.js, import BookRoutes, sử dụng BookRoutes là element trong Route
+ - render new Routes khác với render component thông thường, khi hai Routes(thêm s) lồng nhau, chìa khóa ở đây là
+ thêm /* ở cuối path ban đầu để nối chúng là oke
+ VD: <Routes>
+  <Route path="/books/*" element={<BookRoutes />}/>
+ </Routes>
+
+Tóm lại ta có hai cách làm Route lồng nhau theo layout:
+C1: Là sử dụng Outlet và có thể dùng useOutletContext để lấy data, các component con 
+chính là Outlet
+C2: sử dụng từ khóa /*, Routes lồng nhau, tạo 1 Routes component để làm element có 1 Route chỉ định có path=".../*",
+bên trong Routes component ta có thể thêm custom layout vào cũng được. 
+
+* MASTER CONFIG ROUTE:
+- Sử dụng custom hook, định nghĩa bằng việc dùng javascript, chứ không dùng jsx như cũ:
+- Sử dụng useRoutes hook từ react-router-dom, chỉ cần cung cấp cho nó 1 mảng các object
+VD:lconst element = {
+  path="/",
+  element: <NavLayout />,
+  children: [
+    {
+      index: true,
+      element: <Home />
+    }
+  ]
+}
+
+- Chú ý: Tất cả các thuộc tính của những object giống hệt với các prop pass đến component Route
+- khi render chỉ cần dùng {element} là xong
+
+6) Link component
+- Các prop có thể có: 
+a) replace: khi bạn nhấp vào 1 route có prop: replace, sau đó bạn
+nhấn nút trở về trang trước đó, mà nó sẽ sang trang trước đó nữa, bỏ qua trang gần nhất
+- Hữu ích khi: khi đăng nhập xong, sẽ sang trang chủ, nhưng nhỡ user bấm back lại, sẽ vào trang đăng nhập, ko nên làm thế
+b) reloadDocument: khi click sẽ reload trang
+c) state: cho phép cung cáp data từ 1 link đến các khác nhưng dữ liệu này ko show trên url
+
+7) NavLink component
+- Đại lọai giống Link kế thừa prop, nhưng đại loại nó có thể theo dõi trạng thái hoạt động của 1 link
+- thêm thuộc tính: className, style, children
+- Những thuộc tính cho phép nhận vào 1 hàm, và hàm có thuộc tính {isActive}
+- isActive sẽ là true nếu hiện tại url đang ở liên kết này 
+- bên trong NavLink còn nhận 1 hàm làm children, hàm có trạng thái isActive và trả về những gì mình muốn
